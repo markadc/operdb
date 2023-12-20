@@ -60,13 +60,13 @@ class MysqlHandler:
             case _:
                 ...
 
-    def exe_sql(self, sql: str, args=None, mode=0, dict_cursor=True) -> int | bool | dict | list | tuple:
+    def exe_sql(self, sql: str, args=None, query_all=None, dict_cursor=True) -> int | bool | dict | list | tuple:
         """
         执行SQL
         Args:
             sql: SQL语句
             args: 配合SQL语句的参数
-            mode: 为1选择fetchone，为2选择fetchall
+            query_all: 为True调用fetchall，为False调用fetchone
             dict_cursor: 是否选择dict游标
 
         Returns:
@@ -83,12 +83,7 @@ class MysqlHandler:
                 con.rollback()
             return False
         else:
-            if mode == 1:
-                return cur.fetchone()
-            elif mode == 2:
-                return cur.fetchall()
-            else:
-                return line
+            return line if query_all is None else cur.fetchall() if query_all else cur.fetchone()
         finally:
             self.close_connect(cur, con)
 
@@ -158,7 +153,7 @@ class MysqlHandler:
         """
         tail = self.make_part(values)
         sql = 'select {} from {} where {} in ({})'.format(field, table, field, tail)
-        datas = self.exe_sql(sql, mode=2)
+        datas = self.exe_sql(sql, query_all=2)
         old = [data[field] for data in datas]
         new = list(set(values) - set(old))
         return new, old
@@ -214,7 +209,7 @@ class MysqlHandler:
         selects = select if isinstance(select, str) else self.make_part(select, add=False)
         cond = '{} in ({})'.format(field, self.make_part(values))
         sql = 'select {} from {} where {}'.format(selects, table, cond)
-        return self.exe_sql(sql, mode=2)
+        return self.exe_sql(sql, query_all=2)
 
     def add_one(self, table: str, item: dict, update: str = None, unique='id') -> int:
         """
@@ -374,7 +369,7 @@ class MysqlHandler:
     def random(self, table, limit=1) -> dict | list:
         """返回随机数据"""
         sql = 'select * from {} where id >= (rand() * (select max(id) from {})) limit {}'.format(table, table, limit)
-        datas = self.exe_sql(sql, mode=2 if limit > 1 else 1)
+        datas = self.exe_sql(sql, query_all=2 if limit > 1 else 1)
         return datas
 
     def query(self, table, pick='*', limit=None, **kwargs) -> list:
@@ -382,26 +377,26 @@ class MysqlHandler:
         tail = '' if limit is None else 'limit {}'.format(limit)
         cond = 'where {}'.format(self.make_part(kwargs, mid=' and ')) if kwargs else ''
         sql = 'select {} from {} {} {}'.format(pick, table, cond, tail)
-        datas = self.exe_sql(sql, mode=2)
+        datas = self.exe_sql(sql, query_all=2)
         return datas
 
     def query_count(self, table, **kwargs) -> int:
         """查询数量"""
         cond = 'where {}'.format(self.make_part(kwargs, mid=' and ')) if kwargs else ''
         sql = 'select count(1) from {} {}'.format(table, cond)
-        count = self.exe_sql(sql, mode=1, dict_cursor=False)[0]
+        count = self.exe_sql(sql, query_all=1, dict_cursor=False)[0]
         return count
 
     def get_min(self, table, field):
         """获取最小值"""
         sql = 'select min({}) from {}'.format(field, table)
-        value = self.exe_sql(sql, mode=1, dict_cursor=False)[0]
+        value = self.exe_sql(sql, query_all=1, dict_cursor=False)[0]
         return value
 
     def get_max(self, table, field):
         """获取最大值"""
         sql = 'select max({}) from {}'.format(field, table)
-        value = self.exe_sql(sql, mode=1, dict_cursor=False)[0]
+        value = self.exe_sql(sql, query_all=1, dict_cursor=False)[0]
         return value
 
     @staticmethod
@@ -452,7 +447,7 @@ class MysqlHandler:
                 once
             )
 
-            result: list = self.exe_sql(sql, mode=2)
+            result: list = self.exe_sql(sql, query_all=2)
             if result is False:
                 self.log('scan', sql, '执行失败', level='ERROR')
                 return
