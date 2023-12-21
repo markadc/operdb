@@ -15,10 +15,10 @@ mysql_cfg = {
 
 handler = MysqlHandler(mysql_cfg)
 
-res = handler.exe_sql('show databases', mode=2, dict_cursor=False)
+res = handler.exe_sql('show databases', query_all=True, dict_cursor=False)
 print(res)
 
-res = handler.exe_sql('show tables', mode=2, dict_cursor=False)
+res = handler.exe_sql('show tables', query_all=True, dict_cursor=False)
 print(res)
 
 res = handler.random('people')
