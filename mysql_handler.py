@@ -70,7 +70,7 @@ class MysqlHandler:
             dict_cursor: 是否选择dict游标
 
         Returns:
-            默认返回受影响的行数，SQL执行失败返回False，根据mode返回fetchone或者fetchall的数据
+            默认返回受影响的行数，SQL执行失败返回False，根据query_all返回fetchone或者fetchall的数据
         """
         cur, con = None, None
         try:
