@@ -7,7 +7,7 @@ python3.10+
 # 使用sqoper
 
 ```python
-from sqoper import MysqlHandler
+from poper import MysqlHandler
 
 mysql_cfg = {
     'user': 'admin',
