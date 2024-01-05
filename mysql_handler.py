@@ -36,29 +36,17 @@ class MysqlHandler:
         if con:
             con.close()
 
-    @staticmethod
-    def log(name, sql, msg, level):
-        """输出日志"""
+    LEVEL_INFO = {0: 'WARNING', 1: 'ERROR'}
+
+    def __care(self, name, sql, msg, level):
         sql = re.sub('\s+', ' ', sql).strip()
-        match level:
-            case "WARNING":
-                logger.warning(
-                    '''
-                    name    {}
-                    sql     {}
-                    msg     {}
-                    '''.format(name, sql, msg)
-                )
-            case "ERROR":
-                logger.error(
-                    '''
-                    name    {}
-                    sql     {}
-                    msg     {}
-                    '''.format(name, sql, msg)
-                )
-            case _:
-                ...
+        getattr(logger, self.LEVEL_INFO.get(level).lower())(
+            """
+            name    {}
+            sql     {}
+            msg     {}
+            """.format(name, sql, msg)
+        )
 
     def exe_sql(self, sql: str, args=None, query_all=None, dict_cursor=True) -> int | bool | dict | list | tuple:
         """
@@ -78,7 +66,7 @@ class MysqlHandler:
             line = cur.execute(sql, args=args)
             con.commit()
         except Exception as e:
-            self.log('exe_sql', sql, e, level='ERROR')
+            self.__care('exe_sql', sql, e, 1)
             if con:
                 con.rollback()
             return False
@@ -103,7 +91,7 @@ class MysqlHandler:
             line = cur.executemany(sql, args=args)
             con.commit()
         except Exception as e:
-            self.log('exem_sql', sql, e, level='ERROR')
+            self.__care('exem_sql', sql, e, 1)
             if con:
                 con.rollback()
             return False
@@ -449,10 +437,10 @@ class MysqlHandler:
 
             result: list = self.exe_sql(sql, query_all=True)
             if result is False:
-                self.log('scan', sql, '执行失败', level='ERROR')
+                self.__care('scan', sql, '执行失败', 1)
                 return
             if not result:
-                self.log('scan', sql, '查询为空', level='WARNING')
+                self.__care('scan', sql, '查询为空', 0)
                 return
 
             # 输出查询日志

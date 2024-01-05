@@ -1,8 +1,8 @@
 # 持续更新中...
 
-# python解释器
+# Python解释器
 
-python3.10+
+- python3.10+
 
 # 使用poper
 
