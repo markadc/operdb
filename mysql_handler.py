@@ -19,28 +19,27 @@ class MysqlHandler:
         cfg.setdefault('maxcached', 0)
         cfg.setdefault('maxusage', 0)
         cfg.setdefault('blocking', True)
-        self.cfg = cfg
-        self.pool = PooledDB(pymysql, **self.cfg)
+        self._cfg = cfg
+        self._pool = PooledDB(pymysql, **self._cfg)
 
-    def open_connect(self, dict_cursor=False):
+    def _open_connect(self, dict_cursor=False):
         """打开连接"""
-        con = self.pool.connection()
+        con = self._pool.connection()
         cur = con.cursor(DictCursor) if dict_cursor else con.cursor()
         return cur, con
 
     @staticmethod
-    def close_connect(cur, con):
+    def _close_connect(cur, con):
         """关闭连接"""
         if cur:
             cur.close()
         if con:
             con.close()
 
-    LEVEL_INFO = {0: 'WARNING', 1: 'ERROR'}
-
-    def __care(self, name, sql, msg, level):
+    @staticmethod
+    def _care(name, sql, msg, level):
         sql = re.sub('\s+', ' ', sql).strip()
-        getattr(logger, self.LEVEL_INFO.get(level).lower())(
+        getattr(logger, level)(
             """
             name    {}
             sql     {}
@@ -62,18 +61,18 @@ class MysqlHandler:
         """
         cur, con = None, None
         try:
-            cur, con = self.open_connect(dict_cursor)
+            cur, con = self._open_connect(dict_cursor)
             line = cur.execute(sql, args=args)
             con.commit()
         except Exception as e:
-            self.__care('exe_sql', sql, e, 1)
+            self._care('exe_sql', sql, e, 'error')
             if con:
                 con.rollback()
             return False
         else:
             return line if query_all is None else cur.fetchall() if query_all else cur.fetchone()
         finally:
-            self.close_connect(cur, con)
+            self._close_connect(cur, con)
 
     def exem_sql(self, sql: str, args=None) -> int | bool:
         """
@@ -87,18 +86,18 @@ class MysqlHandler:
         """
         cur, con = None, None
         try:
-            cur, con = self.open_connect()
+            cur, con = self._open_connect()
             line = cur.executemany(sql, args=args)
             con.commit()
         except Exception as e:
-            self.__care('exem_sql', sql, e, 1)
+            self._care('exem_sql', sql, e, 'error')
             if con:
                 con.rollback()
             return False
         else:
             return line
         finally:
-            self.close_connect(cur, con)
+            self._close_connect(cur, con)
 
     @staticmethod
     def make_part(src: list | dict, add=True, mid=', ') -> str:
@@ -437,10 +436,10 @@ class MysqlHandler:
 
             result: list = self.exe_sql(sql, query_all=True)
             if result is False:
-                self.__care('scan', sql, '执行失败', 1)
+                self._care('scan', sql, '执行失败', 'error')
                 return
             if not result:
-                self.__care('scan', sql, '查询为空', 0)
+                self._care('scan', sql, '查询为空', 'warning')
                 return
 
             # 输出查询日志
