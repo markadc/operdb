@@ -1,0 +1,4 @@
+DBUtils==3.0.3
+Faker==19.13.0
+loguru==0.7.2
+PyMySQL==1.1.0
