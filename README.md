@@ -9,7 +9,7 @@
 ### 连接MySQL
 
 ```python
-from poper import MysqlHandler
+from operdb import MysqlHandler
 
 mysql_cfg = {
     'user': 'admin',
